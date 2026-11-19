@@ -1,0 +1,53 @@
+name: Deploy ZYRO site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip the site zip(s) into _site
+        run: |
+          rm -rf _site && mkdir -p _site
+          found=0
+          for z in *.zip; do
+            [ -e "$z" ] || continue
+            found=1
+            unzip -oq "$z" -d _site
+          done
+          if [ "$found" = "0" ]; then
+            # no zip: deploy the plain files in the repo
+            cp -r ./index.html ./privacy.html _site/ 2>/dev/null || true
+            [ -d assets ] && cp -r assets _site/
+          fi
+          # if the zip had one wrapper folder, lift its contents to the root
+          if [ ! -f _site/index.html ]; then
+            d=$(find _site -name index.html -printf '%h\n' | head -n1)
+            [ -n "$d" ] && cp -r "$d"/. _site/
+          fi
+          test -f _site/index.html || { echo "index.html not found after unzip"; exit 1; }
+          ls -la _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
