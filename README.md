@@ -1,4 +1,4 @@
-# ZYRO website (free, GitHub Pages)
+# ZYRO website ( Pages)
 
 Files: `index.html` (landing page), `privacy.html` (privacy policy). No build step, no paid service, no external libraries.
 
